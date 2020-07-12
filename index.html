@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>WebSocket Chat</title>
+        <style type="text/css">
+            body {
+                font-family: "Courier New", sans-serif;
+                text-align: left;
+                color: #eed;
+                font-size: 14px;
+            }
+            .main{
+              background-color: #839995;
+              box-sizing: border-box;
+              display: flex;
+              flex-flow: column;
+              width: 100%;
+              height: calc(100vh - 100px);
+              border-radius: 15px;
+            }
+            .message-form{
+              background-color: #61928A;
+              border-radius: 15px;
+            }
+            .main .messages{
+              display: flex;
+              flex-flow: column;
+              flex: auto;
+              overflow-y: auto;
+              margin-left: 15px;
+              margin-right: 5px;
+            }
+
+            .input-message{
+              float: left;
+              box-sizing: border-box;
+              border: none;
+              padding: 10px;
+              margin-top: 10px;
+              margin-bottom: 10px;
+              background: none;
+              width: calc(100vw - 75px);
+              overflow-x: hidden;
+              overflow-y: auto;
+              outline: none;
+              resize: none;
+              color: #B6CCC8;
+            }
+            ::placeholder{
+              color: #BCCCC9;
+            }
+            .button-send{
+              float: right;
+              cursor: pointer;
+              user-select: none;
+              padding: 11.5px;
+            }
+            .state{
+              text-align:center;
+              margin-top: 15px;
+              color: #B6DDFF;
+              font-size: large;
+            }
+            .author{
+              color: #00bbff;
+            }
+            .time{
+              color: #000;
+            }
+            /* custom scrollbar */
+            ::-webkit-scrollbar {
+              width: 7px;
+            }
+            ::-webkit-scrollbar-track {
+              background: transparent;
+            }
+            ::-webkit-scrollbar-thumb {
+              border-radius: 3px;
+              background: #B6CCC8;
+            }
+            ::-webkit-scrollbar-thumb:hover {
+              background: #BCCCC9;
+            }
+        </style>
+    </head>
+    <body>
+          <div class="main">
+            <div class="state">
+              <span class="users">?</span> online
+            </div>
+            <div class="messages"></div>
+            <div class="message-form">
+              <textarea name="message" id="text" class="input-message" placeholder="Input text of message" rows="1"></textarea>
+              <img src="https://img.icons8.com/small/32/000000/filled-sent.png" class="button-send"/>
+            </div>
+          </div>
+        <script>
+            function formateNumber(myNumber){
+              return ("0" + myNumber).slice(-2);
+            }
+            function addSystemMessage(content){
+            	var messagesNode = document.getElementsByClassName('messages')[0];
+            	var message = document.createElement('div');
+            	var messageSystem = document.createElement('span');
+              var messageTime = document.createElement('span');
+              messageTime.className = 'time';
+              var now = new Date(Date.now());
+              messageTime.textContent = formateNumber(now.getDate()) + "-" + formateNumber(now.getMonth() + 1) + " " + formateNumber(now.getHours()) + ":" + formateNumber(now.getMinutes()) + ":" + formateNumber(now.getSeconds()) + "  ";
+            	messageSystem.className = 'system';
+            	messageSystem.textContent = content;
+            	message.className = 'message';
+              message.appendChild(messageTime)
+            	message.appendChild(messageSystem);
+            	messagesNode.insertBefore(message, messagesNode.firstChild);
+            }
+            function addMessage(author, content){
+            	var messagesNode = document.getElementsByClassName('messages')[0];
+            	var message = document.createElement('div');
+            	var messageAuthor = document.createElement('span');
+              var messageTime = document.createElement('span');
+              messageTime.className = 'time';
+              var now = new Date(Date.now());
+              messageTime.textContent = formateNumber(now.getDate()) + "-" + formateNumber(now.getMonth() + 1) + " " + formateNumber(now.getHours()) + ":" + formateNumber(now.getMinutes()) + ":" + formateNumber(now.getSeconds()) + "  ";
+            	messageAuthor.className = 'author';
+            	messageAuthor.textContent = author;
+            	message.className = 'message';
+              message.appendChild(messageTime)
+            	message.appendChild(messageAuthor);
+            	message.innerHTML += ": " + content;
+            	messagesNode.insertBefore(message, messagesNode.firstChild);
+            }
+
+            var users = document.querySelector('.users'),
+                send = document.querySelector('.button-send'),
+                messageField = document.querySelector('.input-message'),
+                websocket = new WebSocket("ws://127.0.0.1:6789/");
+
+            send.onclick = function (event){
+                var t = messageField.value;
+                messageField.value = "";
+                if (t != "") { websocket.send(JSON.stringify({action: 'message', data: t})); }
+            }
+            messageField.addEventListener("keydown", function(event) {
+              if (event.keyCode === 13) {
+                event.preventDefault();
+                send.click();
+              }
+            });
+            websocket.onmessage = function (event) {
+                data = JSON.parse(event.data);
+                switch (data.type) {
+                    case 'users':
+                        users.textContent = (
+                            data.count.toString() + " user" +
+                            (data.count == 1 ? "" : "s"));
+                        break;
+                    case 'message':
+                        //data.address
+                        addMessage(data.nick, data.text);
+                        break;
+                    case 'system':
+                        addSystemMessage(data.text);
+                        break;
+                    default:
+                        console.error("unsupported event", data);
+                }
+            };
+        </script>
+    </body>
+</html>
