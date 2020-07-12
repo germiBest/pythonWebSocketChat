@@ -133,7 +133,7 @@
             var users = document.querySelector('.users'),
                 send = document.querySelector('.button-send'),
                 messageField = document.querySelector('.input-message'),
-                websocket = new WebSocket("ws://127.0.0.1:6789/");
+                websocket = new WebSocket("ws://139.180.184.160:6789/");
 
             send.onclick = function (event){
                 var t = messageField.value;
@@ -164,6 +164,9 @@
                     default:
                         console.error("unsupported event", data);
                 }
+            };
+            websocket.onerror = function (e){
+              addSystemMessage("Connection error");
             };
         </script>
     </body>
