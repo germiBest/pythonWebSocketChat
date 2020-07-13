@@ -60,6 +60,12 @@
               margin-top: 15px;
               color: #B6DDFF;
               font-size: large;
+              cursor: pointer;
+              user-select: none;
+            }
+            .online-list{
+              text-align:center;
+              display: none;
             }
             .author{
               color: #00bbff;
@@ -81,6 +87,7 @@
             ::-webkit-scrollbar-thumb:hover {
               background: #BCCCC9;
             }
+
         </style>
     </head>
     <body>
@@ -88,6 +95,7 @@
             <div class="state">
               <span class="users">?</span> online
             </div>
+            <div class="online-list">asdf</div>
             <div class="messages"></div>
             <div class="message-form">
               <textarea name="message" id="text" class="input-message" placeholder="Input text of message" rows="1"></textarea>
@@ -122,40 +130,58 @@
               var now = new Date(Date.now());
               messageTime.textContent = formateNumber(now.getDate()) + "-" + formateNumber(now.getMonth() + 1) + " " + formateNumber(now.getHours()) + ":" + formateNumber(now.getMinutes()) + ":" + formateNumber(now.getSeconds()) + "  ";
             	messageAuthor.className = 'author';
-            	messageAuthor.textContent = author;
+            	messageAuthor.textContent = author[0];
+              messageAuthor.style.color = "#" + author[1]
             	message.className = 'message';
               message.appendChild(messageTime)
             	message.appendChild(messageAuthor);
             	message.innerHTML += ": " + content;
             	messagesNode.insertBefore(message, messagesNode.firstChild);
             }
+            function onlineListGen(list){
+              var str = "";
 
+              for (var f in list){
+                str += "<span style=\" color: #" + list[f][1] + ";\">" + list[f][0] + "</span>, ";
+              }
+              return str;
+            }
             var users = document.querySelector('.users'),
                 send = document.querySelector('.button-send'),
+                state = document.querySelector('.state'),
+                onlineList = document.querySelector('.online-list'),
                 messageField = document.querySelector('.input-message'),
-                websocket = new WebSocket("ws://139.180.184.160:6789/");
-
-            send.onclick = function (event){
+                websocket = new WebSocket("ws://139.180.184.160/");
+            state.onclick = function (event) {
+                if (onlineList.style.display == "block"){
+                    onlineList.style.display = "none"
+                } else {
+                    onlineList.style.display = "block"
+                }
+            }
+            send.onclick = function (event) {
                 var t = messageField.value;
                 messageField.value = "";
                 if (t != "") { websocket.send(JSON.stringify({action: 'message', data: t})); }
             }
             messageField.addEventListener("keydown", function(event) {
-              if (event.keyCode === 13) {
+              if (event.keyCode == 13) {
                 event.preventDefault();
                 send.click();
               }
             });
+
             websocket.onmessage = function (event) {
                 data = JSON.parse(event.data);
                 switch (data.type) {
                     case 'users':
                         users.textContent = (
-                            data.count.toString() + " user" +
+                            data.list.length.toString() + " user" +
                             (data.count == 1 ? "" : "s"));
+                        list = data.list;
+                        onlineList.innerHTML =  onlineListGen(list);
                         break;
                     case 'message':
-                        //data.address
                         addMessage(data.nick, data.text);
                         break;
                     case 'system':
@@ -165,7 +191,7 @@
                         console.error("unsupported event", data);
                 }
             };
-            websocket.onerror = function (e){
+            websocket.onerror = function (event) {
               addSystemMessage("Connection error");
             };
         </script>
