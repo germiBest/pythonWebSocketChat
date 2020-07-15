@@ -8,14 +8,24 @@ logging.basicConfig()
 
 USERS = dict()
 
+MESSAGES = []
+
+def add_message(user, message):
+    if len(MESSAGES) >= 50:
+        MESSAGES.pop(0)
+        MESSAGES.append((user, message))
+    else:
+        MESSAGES.append((user, message))
+
 def users_event():
     list = [t for t in USERS.values() if t[0] != '']
     return json.dumps({"type": "users", "list": list})
 
-async def notify_message(text, nick):
+async def notify_message(text, user):
     if USERS:
         if text:
-            message = json.dumps({"type": "message", "nick": nick, "text": text})
+            add_message(user, text)
+            message = json.dumps({"type": "message", "user": user, "text": text})
             await asyncio.wait([user.send(message) for user in USERS])
 
 async def notify_system(text):
@@ -30,6 +40,7 @@ async def notify_users():
         await asyncio.wait([user.send(message) for user in USERS])
 
 async def register(websocket):
+    await asyncio.wait([websocket.send(json.dumps({"type": "msglist", "list": MESSAGES}))])
     USERS[websocket] = ["", ""]
     await notify_users()
 

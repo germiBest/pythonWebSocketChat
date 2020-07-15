@@ -151,7 +151,8 @@
                 state = document.querySelector('.state'),
                 onlineList = document.querySelector('.online-list'),
                 messageField = document.querySelector('.input-message'),
-                websocket = new WebSocket("ws://139.180.184.160/");
+                websocket = new WebSocket("ws://127.0.0.1:6789/");
+                // 139.180.184.160
             state.onclick = function (event) {
                 if (onlineList.style.display == "block"){
                     onlineList.style.display = "none"
@@ -182,10 +183,16 @@
                         onlineList.innerHTML =  onlineListGen(list);
                         break;
                     case 'message':
-                        addMessage(data.nick, data.text);
+                        addMessage(data.user, data.text);
                         break;
                     case 'system':
                         addSystemMessage(data.text);
+                        break;
+                    case 'msglist':
+
+                        for (x in data.list){
+                          addMessage(data.list[x][0], data.list[x][1])
+                        }
                         break;
                     default:
                         console.error("unsupported event", data);
