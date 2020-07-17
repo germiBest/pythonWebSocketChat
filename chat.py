@@ -3,6 +3,7 @@ import json
 import logging
 import websockets
 import color
+import time
 
 logging.basicConfig()
 
@@ -10,12 +11,12 @@ USERS = dict()
 
 MESSAGES = []
 
-def add_message(user, message):
+def add_message(time, user, message):
     if len(MESSAGES) >= 50:
         MESSAGES.pop(0)
-        MESSAGES.append((user, message))
+        MESSAGES.append((time, user, message))
     else:
-        MESSAGES.append((user, message))
+        MESSAGES.append((time, user, message))
 
 def users_event():
     list = [t for t in USERS.values() if t[0] != '']
@@ -24,13 +25,13 @@ def users_event():
 async def notify_message(text, user):
     if USERS:
         if text:
-            add_message(user, text)
-            message = json.dumps({"type": "message", "user": user, "text": text})
+            add_message(int(time.time()*1000), user, text)
+            message = json.dumps({"type": "message", "time": int(time.time()*1000), "user": user, "text": text})
             await asyncio.wait([user.send(message) for user in USERS])
 
 async def notify_system(text):
     if USERS:
-        message = json.dumps({"type": "system", "text": text})
+        message = json.dumps({"type": "system", "time": int(time.time()*1000), "text": text})
         await asyncio.wait([user.send(message) for user in USERS])
         await notify_users()
 
@@ -45,7 +46,8 @@ async def register(websocket):
     await notify_users()
 
 async def unregister(websocket):
-    await notify_system(USERS[websocket][0] + " is disconnected")
+    if USERS[websocket][0] != "":
+        await notify_system(USERS[websocket][0] + " is disconnected")
     del USERS[websocket]
     await notify_users()
 

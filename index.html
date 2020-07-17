@@ -121,13 +121,13 @@
             	message.appendChild(messageSystem);
             	messagesNode.insertBefore(message, messagesNode.firstChild);
             }
-            function addMessage(author, content){
+            function addMessage(time, author, content){
             	var messagesNode = document.getElementsByClassName('messages')[0];
             	var message = document.createElement('div');
             	var messageAuthor = document.createElement('span');
               var messageTime = document.createElement('span');
               messageTime.className = 'time';
-              var now = new Date(Date.now());
+              var now = new Date(time);
               messageTime.textContent = formateNumber(now.getDate()) + "-" + formateNumber(now.getMonth() + 1) + " " + formateNumber(now.getHours()) + ":" + formateNumber(now.getMinutes()) + ":" + formateNumber(now.getSeconds()) + "  ";
             	messageAuthor.className = 'author';
             	messageAuthor.textContent = author[0];
@@ -151,8 +151,7 @@
                 state = document.querySelector('.state'),
                 onlineList = document.querySelector('.online-list'),
                 messageField = document.querySelector('.input-message'),
-                websocket = new WebSocket("ws://127.0.0.1:6789/");
-                // 139.180.184.160
+                websocket = new WebSocket("ws://139.180.184.160:6789/");
             state.onclick = function (event) {
                 if (onlineList.style.display == "block"){
                     onlineList.style.display = "none"
@@ -183,7 +182,7 @@
                         onlineList.innerHTML =  onlineListGen(list);
                         break;
                     case 'message':
-                        addMessage(data.user, data.text);
+                        addMessage(data.time, data.user, data.text);
                         break;
                     case 'system':
                         addSystemMessage(data.text);
@@ -191,7 +190,7 @@
                     case 'msglist':
 
                         for (x in data.list){
-                          addMessage(data.list[x][0], data.list[x][1])
+                          addMessage(data.list[x][0], data.list[x][1], data.list[x][2])
                         }
                         break;
                     default:
