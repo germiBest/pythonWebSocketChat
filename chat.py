@@ -35,6 +35,12 @@ async def notify_system(text):
         await asyncio.wait([user.send(message) for user in USERS])
         await notify_users()
 
+async def notify_color(user, newcolor):
+    if USERS:
+        message = json.dumps({"type": "color", "time": int(time.time()*1000), "nick": user[0], "oldcolor": user[1], "newcolor": newcolor})
+        await asyncio.wait([user.send(message) for user in USERS])
+
+
 async def notify_users():
     if USERS:
         message = users_event()
@@ -76,6 +82,7 @@ async def counter(websocket, path):
                 elif data["data"].find('/color ', 0, (-1)*(len(data["data"]) - 7)) != -1:
                     coloruser = data["data"][7:]
                     if color.check_color(coloruser):
+                        await notify_color(USERS[websocket], coloruser)
                         USERS[websocket][1] = coloruser
                     else:
                         await asyncio.wait([websocket.send(json.dumps({"type": "system", "text": "Your color is invalid, formate is /color FFFFFF"}))])

@@ -103,6 +103,9 @@
             </div>
           </div>
         <script>
+            function htmlInjectAvoid(str){
+              return str.replace(/</g, "&lt;").replace(/>/g, "&gt;");
+            }
             function formateNumber(myNumber){
               return ("0" + myNumber).slice(-2);
             }
@@ -115,7 +118,7 @@
               var now = new Date(Date.now());
               messageTime.textContent = formateNumber(now.getDate()) + "-" + formateNumber(now.getMonth() + 1) + " " + formateNumber(now.getHours()) + ":" + formateNumber(now.getMinutes()) + ":" + formateNumber(now.getSeconds()) + "  ";
             	messageSystem.className = 'system';
-            	messageSystem.textContent = content;
+            	messageSystem.textContent = htmlInjectAvoid(content);
             	message.className = 'message';
               message.appendChild(messageTime)
             	message.appendChild(messageSystem);
@@ -130,12 +133,12 @@
               var now = new Date(time);
               messageTime.textContent = formateNumber(now.getDate()) + "-" + formateNumber(now.getMonth() + 1) + " " + formateNumber(now.getHours()) + ":" + formateNumber(now.getMinutes()) + ":" + formateNumber(now.getSeconds()) + "  ";
             	messageAuthor.className = 'author';
-            	messageAuthor.textContent = author[0];
+            	messageAuthor.textContent = htmlInjectAvoid(author[0]);
               messageAuthor.style.color = "#" + author[1]
             	message.className = 'message';
               message.appendChild(messageTime)
             	message.appendChild(messageAuthor);
-            	message.innerHTML += ": " + content;
+            	message.innerHTML += ": " + htmlInjectAvoid(content);
             	messagesNode.insertBefore(message, messagesNode.firstChild);
             }
             function onlineListGen(list){
@@ -188,11 +191,12 @@
                         addSystemMessage(data.text);
                         break;
                     case 'msglist':
-
                         for (x in data.list){
                           addMessage(data.list[x][0], data.list[x][1], data.list[x][2])
                         }
                         break;
+                    case 'color':
+
                     default:
                         console.error("unsupported event", data);
                 }
