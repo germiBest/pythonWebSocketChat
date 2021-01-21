@@ -7,9 +7,13 @@ import time
 
 logging.basicConfig()
 
+HOST = "localhost"
+PORT = 6789
+
 USERS = dict()
 
 MESSAGES = []
+
 
 def add_message(time, user, message):
     if len(MESSAGES) >= 50:
@@ -18,26 +22,45 @@ def add_message(time, user, message):
     else:
         MESSAGES.append((time, user, message))
 
+
 def users_event():
     list = [t for t in USERS.values() if t[0] != '']
     return json.dumps({"type": "users", "list": list})
 
+
 async def notify_message(text, user):
     if USERS:
         if text:
-            add_message(int(time.time()*1000), user, text)
-            message = json.dumps({"type": "message", "time": int(time.time()*1000), "user": user, "text": text})
+            add_message(int(time.time() * 1000), user, text)
+            message = json.dumps({
+                "type": "message",
+                "time": int(time.time() * 1000),
+                "user": user,
+                "text": text
+            })
             await asyncio.wait([user.send(message) for user in USERS])
+
 
 async def notify_system(text):
     if USERS:
-        message = json.dumps({"type": "system", "time": int(time.time()*1000), "text": text})
+        message = json.dumps({
+            "type": "system",
+            "time": int(time.time() * 1000),
+            "text": text
+        })
         await asyncio.wait([user.send(message) for user in USERS])
         await notify_users()
 
+
 async def notify_color(user, newcolor):
     if USERS:
-        message = json.dumps({"type": "color", "time": int(time.time()*1000), "nick": user[0], "oldcolor": user[1], "newcolor": newcolor})
+        message = json.dumps({
+            "type": "color",
+            "time": int(time.time() * 1000),
+            "nick": user[0],
+            "oldcolor": user[1],
+            "newcolor": newcolor
+        })
         await asyncio.wait([user.send(message) for user in USERS])
 
 
@@ -46,10 +69,16 @@ async def notify_users():
         message = users_event()
         await asyncio.wait([user.send(message) for user in USERS])
 
+
 async def register(websocket):
-    await asyncio.wait([websocket.send(json.dumps({"type": "msglist", "list": MESSAGES}))])
+    await asyncio.wait(
+        [websocket.send(json.dumps({
+            "type": "msglist",
+            "list": MESSAGES
+        }))])
     USERS[websocket] = ["", ""]
     await notify_users()
+
 
 async def unregister(websocket):
     if USERS[websocket][0] != "":
@@ -64,41 +93,75 @@ async def counter(websocket, path):
         async for message in websocket:
             data = json.loads(message)
             if data["action"] == "message":
-                if data["data"].find('/nick ', 0, (-1)*(len(data["data"]) - 6)) != -1:
+                if data["data"].find('/nick ', 0,
+                                     (-1) * (len(data["data"]) - 6)) != -1:
                     newnick = data["data"][6:]
                     if newnick in USERS.values():
-                        await asyncio.wait([websocket.send(json.dumps({"type": "system", "text": "Nickname is already occupied"}))])
+                        await asyncio.wait([
+                            websocket.send(
+                                json.dumps({
+                                    "type":
+                                    "system",
+                                    "text":
+                                    "Nickname is already occupied"
+                                }))
+                        ])
                     elif len(newnick) > 32:
-                        await asyncio.wait([websocket.send(json.dumps({"type": "system", "text": "Nicname is more than 32 characters"}))])
+                        await asyncio.wait([
+                            websocket.send(
+                                json.dumps({
+                                    "type":
+                                    "system",
+                                    "text":
+                                    "Nicname is more than 32 characters"
+                                }))
+                        ])
                     else:
                         if USERS[websocket][0] != "":
                             old = USERS[websocket][0]
                             USERS[websocket][0] = newnick
-                            await notify_system(old + " nickname is changed to " + USERS[websocket][0])
+                            await notify_system(old +
+                                                " nickname is changed to " +
+                                                USERS[websocket][0])
                         else:
                             USERS[websocket][0] = newnick
                             USERS[websocket][1] = color.random_color()
                             await notify_system(newnick + " is connected")
-                elif data["data"].find('/color ', 0, (-1)*(len(data["data"]) - 7)) != -1:
+                elif data["data"].find('/color ', 0,
+                                       (-1) * (len(data["data"]) - 7)) != -1:
                     coloruser = data["data"][7:]
                     if color.check_color(coloruser):
                         await notify_color(USERS[websocket], coloruser)
                         USERS[websocket][1] = coloruser
                     else:
-                        await asyncio.wait([websocket.send(json.dumps({"type": "system", "text": "Your color is invalid, formate is /color FFFFFF"}))])
+                        await asyncio.wait([
+                            websocket.send(
+                                json.dumps({
+                                    "type":
+                                    "system",
+                                    "text":
+                                    "Your color is invalid, formate is /color FFFFFF"
+                                }))
+                        ])
                 else:
-                    if(USERS[websocket][0] == ''):
-                        await asyncio.wait([websocket.send(json.dumps({"type": "system", "text": "Your nickname is empty"}))])
+                    if (USERS[websocket][0] == ''):
+                        await asyncio.wait([
+                            websocket.send(
+                                json.dumps({
+                                    "type": "system",
+                                    "text": "Your nickname is empty"
+                                }))
+                        ])
                     else:
                         await notify_message(data["data"], USERS[websocket])
 
             else:
-                logging.error("unsupported event: {}", data)
+                logging.error("unsupported event: {}".format(data))
     finally:
         await unregister(websocket)
 
 
-start_server = websockets.serve(counter, "139.180.184.160", 6789)
+start_server = websockets.serve(counter, HOST, PORT)
 
 asyncio.get_event_loop().run_until_complete(start_server)
 asyncio.get_event_loop().run_forever()

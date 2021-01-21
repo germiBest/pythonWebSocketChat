@@ -154,7 +154,7 @@
                 state = document.querySelector('.state'),
                 onlineList = document.querySelector('.online-list'),
                 messageField = document.querySelector('.input-message'),
-                websocket = new WebSocket("ws://139.180.184.160:6789/");
+                websocket = new WebSocket("ws://localhost:6789/");
             state.onclick = function (event) {
                 if (onlineList.style.display == "block"){
                     onlineList.style.display = "none"
